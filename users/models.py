@@ -1,7 +1,8 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from lms.models import Course, Lesson
 from django.utils.translation import gettext_lazy as _
+
+from lms.models import Course, Lesson
 
 
 class CustomUser(AbstractUser):
@@ -17,11 +18,11 @@ class CustomUser(AbstractUser):
 class Payment(models.Model):
     objects = None
     PAYMENT_METHODS = [
-        ('cash', 'Наличные'),
-        ('transfer', 'Перевод на счет'),
+        ("cash", "Наличные"),
+        ("transfer", "Перевод на счет"),
     ]
 
-    user = models.ForeignKey('CustomUser', on_delete=models.CASCADE)
+    user = models.ForeignKey("CustomUser", on_delete=models.CASCADE)
     paid_course = models.ForeignKey(Course, on_delete=models.SET_NULL, null=True, blank=True)
     paid_lesson = models.ForeignKey(Lesson, on_delete=models.SET_NULL, null=True, blank=True)
     payment_date = models.DateTimeField(auto_now_add=True)
