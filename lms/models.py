@@ -15,7 +15,6 @@ class Course(models.Model):
     def __str__(self):
         return self.title
 
-
 class Lesson(models.Model):
     objects = None
     title = models.CharField(max_length=200)
