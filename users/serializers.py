@@ -1,7 +1,8 @@
 from rest_framework import serializers
-
+from django.contrib.auth import get_user_model
 from .models import CustomUser, Payment
 
+User = get_user_model()
 
 class PaymentSerializer(serializers.ModelSerializer):
     class Meta:
@@ -22,3 +23,20 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
         fields = ["id", "username", "email", "phone", "city", "avatar", "payments"]
+
+
+class UserRegistrationSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = User
+        fields = ['email', 'password', 'phone', 'city']
+
+    def create(self, validated_data):
+        user = User.objects.create_user(
+            email=validated_data['email'],
+            password=validated_data['password'],
+            phone=validated_data.get('phone', ''),
+            city=validated_data.get('city', '')
+        )
+        return user
