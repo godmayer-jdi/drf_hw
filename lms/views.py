@@ -17,13 +17,14 @@ class CourseViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in SAFE_METHODS:
             return [IsAuthenticated()]
-        elif self.action in ['update', 'partial_update']:  # Редактирование
+        elif self.action in ["update", "partial_update"]:  # Редактирование
             return [IsAuthenticated & (IsModer | IsOwner)]  # Только модераторы или владельцы
-        elif self.action == 'destroy':
+        elif self.action == "destroy":
             return [IsOwner()]  # Удалить разрешено только владельцу
-        elif self.action == 'create':
+        elif self.action == "create":
             return [IsAuthenticated & ~IsModer]
         return [IsAuthenticated()]
+
 
 # Generics для уроков
 class LessonListCreateView(generics.ListCreateAPIView):
@@ -34,7 +35,8 @@ class LessonListCreateView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
 
+
 class LessonRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Lesson.objects.all()
     serializer_class = LessonSerializer
-    permission_classes = [IsAuthenticated & (IsModer | IsOwner)]  #Редактирование, удаление — модераторы или владельцы
+    permission_classes = [IsAuthenticated & (IsModer | IsOwner)]  # Редактирование, удаление — модераторы или владельцы

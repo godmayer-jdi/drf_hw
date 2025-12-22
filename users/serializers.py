@@ -4,6 +4,7 @@ from .models import CustomUser, Payment
 
 User = get_user_model()
 
+
 class PaymentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Payment
@@ -30,13 +31,13 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['email', 'password', 'phone', 'city']
+        fields = ["email", "password", "phone", "city"]
 
     def create(self, validated_data):
         user = User.objects.create_user(
-            email=validated_data['email'],
-            password=validated_data['password'],
-            phone=validated_data.get('phone', ''),
-            city=validated_data.get('city', '')
+            email=validated_data["email"],
+            password=validated_data["password"],
+            phone=validated_data.get("phone", ""),
+            city=validated_data.get("city", ""),
         )
         return user
