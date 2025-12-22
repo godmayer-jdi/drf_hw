@@ -1,8 +1,11 @@
-from rest_framework import generics, viewsets
+from rest_framework import generics, viewsets, status
 from rest_framework.permissions import AllowAny, SAFE_METHODS, IsAuthenticated
 from users.permissions import IsModer, IsOwner
-from .models import Course, Lesson
+from .models import Course, Lesson, Subscription
 from .serializers import CourseSerializer, LessonSerializer
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from django.shortcuts import get_object_or_404
 
 
 # ViewSet для курсов
@@ -40,3 +43,26 @@ class LessonRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Lesson.objects.all()
     serializer_class = LessonSerializer
     permission_classes = [IsAuthenticated & (IsModer | IsOwner)]  # Редактирование, удаление — модераторы или владельцы
+
+
+class CourseSubscribeAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        course_id = request.data.get('course_id')
+        course = get_object_or_404(Course, id=course_id)
+
+        # Toggle логика
+        subscription = Subscription.objects.filter(
+            user=request.user,
+            course=course
+        )
+
+        if subscription.exists():
+            subscription.delete()
+            message = 'Подписка удалена'
+        else:
+            Subscription.objects.create(user=request.user, course=course)
+            message = 'Подписка добавлена'
+
+        return Response({"message": message}, status=status.HTTP_200_OK)
