@@ -6,14 +6,14 @@ from .serializers import CourseSerializer, LessonSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
-from .paginators import CoursePagination, LessonPagination
+from .paginators import LMSPagination # Отменены после применения общего пагинатора - CoursePagination, LessonPagination
 
 
 # ViewSet для курсов
 class CourseViewSet(viewsets.ModelViewSet):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
-    pagination_class = CoursePagination  # Пагинация
+    pagination_class = LMSPagination  # Пагинация
     permission_classes = [AllowAny]
 
     def perform_create(self, serializer):
@@ -35,7 +35,7 @@ class CourseViewSet(viewsets.ModelViewSet):
 class LessonListCreateView(generics.ListCreateAPIView):
     queryset = Lesson.objects.all()
     serializer_class = LessonSerializer
-    pagination_class = LessonPagination  # ПАГИНАЦИЯ
+    pagination_class = LMSPagination  # Пагинация
     permission_classes = [IsAuthenticated & ~IsModer]  # Создание, кроме модераторов
 
     def perform_create(self, serializer):
