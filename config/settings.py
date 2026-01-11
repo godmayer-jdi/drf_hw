@@ -118,6 +118,9 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
+    "DEFAULT_PAGINATION_CLASS": "lms.paginators.LMSPagination",
+    "PAGE_SIZE": 10,
+    "DEFAULT_SCHEMA_CLASS": "drf_yasg.inspectors.SwaggerAutoSchema",
 }
 
 SIMPLE_JWT = {

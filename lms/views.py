@@ -7,6 +7,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from .paginators import LMSPagination # Отменены после применения общего пагинатора - CoursePagination, LessonPagination
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 
 
 # ViewSet для курсов
@@ -38,6 +40,21 @@ class LessonListCreateView(generics.ListCreateAPIView):
     pagination_class = LMSPagination  # Пагинация
     permission_classes = [IsAuthenticated & ~IsModer]  # Создание, кроме модераторов
 
+    @swagger_auto_schema(
+        operation_description="Получить список уроков или создать новый",
+        responses={200: LessonSerializer(many=True), 201: LessonSerializer, 400: "Ошибки валидации"}
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        operation_description="Создать урок (только не-модераторы)",
+        request_body=LessonSerializer,
+        responses={201: LessonSerializer, 400: "Ошибки валидации", 403: "Нет прав"}
+    )
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
+
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
 
@@ -47,9 +64,33 @@ class LessonRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = LessonSerializer
     permission_classes = [IsAuthenticated & (IsModer | IsOwner)]  # Редактирование, удаление — модераторы или владельцы
 
+    @swagger_auto_schema(
+        operation_description="Уроки: просмотр, редактирование, удаление",
+        responses={200: LessonSerializer, 204: "Удален", 403: "Нет прав", 404: "Не найден"}
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
 
 class CourseSubscribeAPIView(APIView):
     permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_description="Подписка/отписка от курса (toggle)",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'course_id': openapi.Schema(type=openapi.TYPE_INTEGER)
+            },
+            required=['course_id']
+        ),
+        responses={
+            200: openapi.Response('Успех', openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                properties={'message': openapi.Schema(type=openapi.TYPE_STRING)}
+            ))
+        }
+    )
 
     def post(self, request):
         course_id = request.data.get('course_id')
