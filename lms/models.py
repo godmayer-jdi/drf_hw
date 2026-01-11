@@ -7,6 +7,7 @@ class Course(models.Model):
     preview = models.ImageField(upload_to="courses/previews/")
     description = models.TextField()
     owner = models.ForeignKey("users.CustomUser", on_delete=models.CASCADE)
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     class Meta:
         verbose_name = "Курс"
