@@ -1,6 +1,7 @@
 import re
-from rest_framework import serializers
 from urllib.parse import urlparse
+
+from rest_framework import serializers
 
 
 def validate_youtube_link(value):

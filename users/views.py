@@ -3,7 +3,7 @@ from rest_framework import filters, viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated
 
 from .models import CustomUser, Payment
-from .serializers import PaymentSerializer, UserSerializer, UserRegistrationSerializer
+from .serializers import PaymentSerializer, UserRegistrationSerializer, UserSerializer
 
 
 class PaymentViewSet(viewsets.ModelViewSet):

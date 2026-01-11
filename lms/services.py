@@ -1,5 +1,6 @@
 import stripe
 from django.conf import settings
+
 from .models import Course
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
@@ -21,7 +22,7 @@ def create_stripe_price(course: Course):
     return stripe.Price.create(
         product=product.id,
         unit_amount=price_cents,
-        currency='rub',  # тип валюты
+        currency="rub",  # тип валюты
     )
 
 
@@ -30,12 +31,14 @@ def create_payment_session(course: Course):
     price = create_stripe_price(course)
 
     return stripe.checkout.Session.create(
-        payment_method_types=['card'],
-        line_items=[{
-            'price': price.id,
-            'quantity': 1,
-        }],
-        mode='payment',
-        success_url='http://localhost:8000/success?session_id={CHECKOUT_SESSION_ID}',
-        cancel_url='http://localhost:8000/cancel',
+        payment_method_types=["card"],
+        line_items=[
+            {
+                "price": price.id,
+                "quantity": 1,
+            }
+        ],
+        mode="payment",
+        success_url="http://localhost:8000/success?session_id={CHECKOUT_SESSION_ID}",
+        cancel_url="http://localhost:8000/cancel",
     )

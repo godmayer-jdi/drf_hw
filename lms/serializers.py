@@ -1,4 +1,5 @@
 from rest_framework import serializers
+
 from .models import Course, Lesson
 from .validators import validate_youtube_link
 
@@ -24,5 +25,5 @@ class CourseSerializer(serializers.ModelSerializer):
 
     def get_is_subscribed(self, obj):
         """Проверяет подписку текущего пользователя"""
-        user = self.context['request'].user
+        user = self.context["request"].user
         return obj.subscriptions.filter(user=user).exists()
