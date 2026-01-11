@@ -1,14 +1,18 @@
+from django.shortcuts import get_object_or_404
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, viewsets, status
 from rest_framework.permissions import AllowAny, SAFE_METHODS, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from users.models import Payment
 from users.permissions import IsModer, IsOwner
 from .models import Course, Lesson, Subscription
+from .paginators import \
+    LMSPagination  # Отменены после применения общего пагинатора - CoursePagination, LessonPagination
 from .serializers import CourseSerializer, LessonSerializer
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from django.shortcuts import get_object_or_404
-from .paginators import LMSPagination # Отменены после применения общего пагинатора - CoursePagination, LessonPagination
-from drf_yasg.utils import swagger_auto_schema
-from drf_yasg import openapi
+from .services import (create_payment_session)
 
 
 # ViewSet для курсов
@@ -110,3 +114,52 @@ class CourseSubscribeAPIView(APIView):
             message = 'Подписка добавлена'
 
         return Response({"message": message}, status=status.HTTP_200_OK)
+
+
+class CoursePaymentAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_description="Оплата курса через Stripe",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'course_id': openapi.Schema(type=openapi.TYPE_INTEGER, description="ID курса")
+            },
+            required=['course_id']
+        ),
+        responses={
+            200: openapi.Response('Ссылка на оплату', openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    'session_id': openapi.Schema(type=openapi.TYPE_STRING),
+                    'url': openapi.Schema(type=openapi.TYPE_STRING),
+                    'payment_id': openapi.Schema(type=openapi.TYPE_INTEGER)
+                }
+            )),
+            400: "Курс не найден или бесплатный"
+        }
+    )
+    def post(self, request):
+        course_id = request.data.get('course_id')
+        course = get_object_or_404(Course, id=course_id)
+
+        if course.price <= 0:
+            return Response({'error': 'Курс бесплатный'}, status=status.HTTP_400_BAD_REQUEST)
+
+        #  ВЫЗОВЫ ФУНКЦИЙ из services.py
+        session = create_payment_session(course)
+
+        #  Создаем запись о платеже
+        payment = Payment.objects.create(
+            user=request.user,
+            paid_course=course,
+            amount=course.price,
+            payment_method='stripe',
+        )
+
+        return Response({
+            'session_id': session.id,
+            'url': session.url,
+            'payment_id': payment.id
+        }, status=status.HTTP_200_OK)
