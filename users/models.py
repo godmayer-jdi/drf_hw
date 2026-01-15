@@ -3,8 +3,6 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from lms.models import Course, Lesson
-
 
 class CustomUserManager(BaseUserManager):
 
@@ -50,12 +48,16 @@ class Payment(models.Model):
         ("stripe", "Stripe"),
     ]
 
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="payments")
-    paid_course = models.ForeignKey(Course, on_delete=models.SET_NULL, null=True, blank=True, related_name="payments")
-    paid_lesson = models.ForeignKey(Lesson, on_delete=models.SET_NULL, null=True, blank=True, related_name="payments")
+    user = models.ForeignKey("users.CustomUser", on_delete=models.CASCADE, related_name="payments")
+    paid_course = models.ForeignKey("lms.Course", on_delete=models.SET_NULL, null=True, blank=True, related_name="payments")
+    paid_lesson = models.ForeignKey("lms.Lesson", on_delete=models.SET_NULL, null=True, blank=True, related_name="payments")
     payment_date = models.DateTimeField(auto_now_add=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     payment_method = models.CharField(max_length=10, choices=PAYMENT_METHODS)
+
+    stripe_session_id = models.CharField(max_length=255, blank=True, null=True)
+    stripe_payment_url = models.URLField(blank=True, null=True)
+    stripe_status = models.CharField(max_length=50, default='pending')
 
     class Meta:
         verbose_name = "Платеж"

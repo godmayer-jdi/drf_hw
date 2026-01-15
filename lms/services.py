@@ -27,10 +27,10 @@ def create_stripe_price(course: Course):
 
 
 def create_payment_session(course: Course):
-    """Создание сессии оплаты"""
+    """Создание сессии оплаты и данные для сохранения"""
     price = create_stripe_price(course)
 
-    return stripe.checkout.Session.create(
+    session = stripe.checkout.Session.create(
         payment_method_types=["card"],
         line_items=[
             {
@@ -42,3 +42,10 @@ def create_payment_session(course: Course):
         success_url="http://localhost:8000/success?session_id={CHECKOUT_SESSION_ID}",
         cancel_url="http://localhost:8000/cancel",
     )
+
+    return {
+        'session': session,
+        'session_id': session.id,
+        'payment_url': getattr(session, 'url', ''),
+        'status': getattr(session, 'payment_status', 'pending')
+    }

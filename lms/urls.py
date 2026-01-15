@@ -17,4 +17,5 @@ urlpatterns = [
     path("api/", include(router.urls)),
     path("courses/subscribe/", CourseSubscribeAPIView.as_view(), name="course_subscribe"),
     path("courses/<int:course_id>/pay/", views.CoursePaymentAPIView.as_view(), name="course_payment"),
+    path("payments/<int:payment_id>/status/", views.PaymentStatusAPIView.as_view(), name="payment_status"),
 ]
