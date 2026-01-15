@@ -44,8 +44,8 @@ def create_payment_session(course: Course):
     )
 
     return {
-        'session': session,
-        'session_id': session.id,
-        'payment_url': getattr(session, 'url', ''),
-        'status': getattr(session, 'payment_status', 'pending')
+        "session": session,
+        "session_id": session.id,
+        "payment_url": getattr(session, "url", ""),
+        "status": getattr(session, "payment_status", "pending"),
     }

@@ -1,7 +1,5 @@
 import stripe
 from django.conf import settings
-stripe.api_key = settings.STRIPE_SECRET_KEY
-
 from django.shortcuts import get_object_or_404
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -14,11 +12,12 @@ from users.models import Payment
 from users.permissions import IsModer, IsOwner
 
 from .models import Course, Lesson, Subscription
-from .paginators import (
-    LMSPagination,
-)  # Отменены после применения общего пагинатора - CoursePagination, LessonPagination
+from .paginators import \
+    LMSPagination  # Отменены после применения общего пагинатора - CoursePagination, LessonPagination
 from .serializers import CourseSerializer, LessonSerializer
 from .services import create_payment_session
+
+stripe.api_key = settings.STRIPE_SECRET_KEY
 
 
 # ViewSet для курсов
@@ -151,35 +150,36 @@ class CoursePaymentAPIView(APIView):
             return Response({"error": "Курс бесплатный"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            """ Создание записи платежа перед Stripe """
+            """Создание записи платежа перед Stripe"""
             payment = Payment.objects.create(
                 user=request.user,
                 paid_course=course,
                 amount=course.price,
                 payment_method="stripe",
-                stripe_status='pending'
+                stripe_status="pending",
             )
 
             """ Stripe сессия с payment """
             stripe_data = create_payment_session(course, payment)
 
             """ Сохраняем данные Stripe в БД """
-            payment.stripe_session_id = stripe_data['session_id']
-            payment.stripe_payment_url = stripe_data['payment_url']
-            payment.stripe_status = stripe_data['status']
+            payment.stripe_session_id = stripe_data["session_id"]
+            payment.stripe_payment_url = stripe_data["payment_url"]
+            payment.stripe_status = stripe_data["status"]
             payment.save()
 
-            return Response({
-                "session_id": stripe_data['session_id'],
-                "url": stripe_data['payment_url'],
-                "payment_id": payment.id
-            }, status=status.HTTP_200_OK)
+            return Response(
+                {"session_id": stripe_data["session_id"], "url": stripe_data["payment_url"], "payment_id": payment.id},
+                status=status.HTTP_200_OK,
+            )
 
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 """ Проверка статуса """
+
+
 class PaymentStatusAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -188,41 +188,46 @@ class PaymentStatusAPIView(APIView):
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={"payment_id": openapi.Schema(type=openapi.TYPE_INTEGER)},
-            required=["payment_id"]
+            required=["payment_id"],
         ),
         responses={
-            200: openapi.Response("Статус платежа", openapi.Schema(
-                type=openapi.TYPE_OBJECT,
-                properties={
-                    "payment_id": openapi.Schema(type=openapi.TYPE_INTEGER),
-                    "status": openapi.Schema(type=openapi.TYPE_STRING),
-                    "amount": openapi.Schema(type=openapi.TYPE_NUMBER)
-                }
-            )),
+            200: openapi.Response(
+                "Статус платежа",
+                openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        "payment_id": openapi.Schema(type=openapi.TYPE_INTEGER),
+                        "status": openapi.Schema(type=openapi.TYPE_STRING),
+                        "amount": openapi.Schema(type=openapi.TYPE_NUMBER),
+                    },
+                ),
+            ),
             400: "Платеж не найден или нет Stripe данных",
-            403: "Нет доступа к чужому платежу"
-        }
+            403: "Нет доступа к чужому платежу",
+        },
     )
     def post(self, request):
         payment_id = request.data.get("payment_id")
         payment = get_object_or_404(Payment, id=payment_id, user=request.user)
 
-        if payment.payment_method != 'stripe' or not payment.stripe_session_id:
+        if payment.payment_method != "stripe" or not payment.stripe_session_id:
             return Response({"error": "Нет данных Stripe"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            """ Запрос в Stripe """
+            """Запрос в Stripe"""
             stripe_session = stripe.checkout.Session.retrieve(payment.stripe_session_id)
 
             """ Обновление статуса """
             payment.stripe_status = stripe_session.payment_status
             payment.save()
 
-            return Response({
-                "payment_id": payment.id,
-                "status": stripe_session.payment_status,
-                "amount": float(payment.amount),
-                "url": payment.stripe_payment_url
-            })
+            return Response(
+                {
+                    "payment_id": payment.id,
+                    "status": stripe_session.payment_status,
+                    "amount": float(payment.amount),
+                    "url": payment.stripe_payment_url,
+                }
+            )
         except stripe.error.StripeError as e:
             return Response({"error": f"Stripe: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
