@@ -2,7 +2,6 @@ from django.db import models
 
 
 class Course(models.Model):
-    objects = None
     title = models.CharField(max_length=200)
     preview = models.ImageField(upload_to="courses/previews/")
     description = models.TextField()
@@ -18,7 +17,6 @@ class Course(models.Model):
 
 
 class Lesson(models.Model):
-    objects = None
     title = models.CharField(max_length=200)
     description = models.TextField()
     preview = models.ImageField(upload_to="lessons/previews/")
@@ -36,7 +34,6 @@ class Lesson(models.Model):
 
 
 class Subscription(models.Model):
-    objects = None
     user = models.ForeignKey("users.CustomUser", on_delete=models.CASCADE, related_name="subscriptions")
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="subscriptions")
     created_at = models.DateTimeField(auto_now_add=True)
