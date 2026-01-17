@@ -1,7 +1,8 @@
 import logging
+from datetime import timedelta
+
 from celery import shared_task
 from django.utils import timezone
-from datetime import timedelta
 
 from .models import CustomUser
 
@@ -15,15 +16,14 @@ def block_inactive_users():
     """
     try:
         cutoff_date = timezone.now() - timedelta(days=30)
-        inactive_users = CustomUser.objects.filter(
-            last_login__lt=cutoff_date,
-            is_active=True
-        ).exclude(is_superuser=True)  # исключаем из задачи пользователей-администраторов
+        inactive_users = CustomUser.objects.filter(last_login__lt=cutoff_date, is_active=True).exclude(
+            is_superuser=True
+        )  # исключаем из задачи пользователей-администраторов
 
         blocked_count = 0
         for user in inactive_users:
             user.is_active = False
-            user.save(update_fields=['is_active'])
+            user.save(update_fields=["is_active"])
             logger.info(f"Заблокирован неактивный пользователь: {user.email}")
             blocked_count += 1
 

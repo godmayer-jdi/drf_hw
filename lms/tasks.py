@@ -1,12 +1,14 @@
 import logging
-from celery import shared_task
-from django.core.mail import send_mail
-from django.conf import settings
-from django.utils import timezone
 from datetime import timedelta
 
-from .models import Course, Subscription
+from celery import shared_task
+from django.conf import settings
+from django.core.mail import send_mail
+from django.utils import timezone
+
 from users.models import CustomUser
+
+from .models import Course, Subscription
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +26,7 @@ def send_course_update_notification(course_id: int):
             return False
 
         # Получаем подписчиков
-        subscriptions = Subscription.objects.filter(course=course).select_related('user')
+        subscriptions = Subscription.objects.filter(course=course).select_related("user")
         users = [sub.user for sub in subscriptions if sub.user.email]
 
         if not users:
