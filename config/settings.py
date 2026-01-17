@@ -150,5 +150,11 @@ CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60
 
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
+CELERY_BEAT_SCHEDULE = {
+    'block-inactive-users-daily': {
+        'task': 'users.tasks.block_inactive_users',
+        'schedule': 86400,  # Без использования crontab 24 часа = 86400 секунд (чтоб избежать проблемы с Windows)
+    },
+}
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
