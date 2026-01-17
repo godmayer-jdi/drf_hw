@@ -16,7 +16,7 @@ from .paginators import \
     LMSPagination  # Отменены после применения общего пагинатора - CoursePagination, LessonPagination
 from .serializers import CourseSerializer, LessonSerializer
 from .services import create_payment_session
-from .tasks import send_course_update_notification
+# from .tasks import send_course_update_notification
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
@@ -48,11 +48,18 @@ class CourseViewSet(viewsets.ModelViewSet):
         """
         course = serializer.save()
 
-        # Задание асинхронной рассылки при обновлении курса
-        send_course_update_notification.delay(course.id)
+        try:
+            from .tasks import send_course_update_notification
+            send_course_update_notification.delay(course.id)
+        except ImportError:
+            print(f"️Celery не запущен. Рассылка курса {course.id} отложена")
 
-        # Логирование
-        print(f"Рассылка запущена для курса ID: {course.id}")
+        print(f"Курс {course.id} обновлен")
+        # # Задание асинхронной рассылки при обновлении курса
+        # send_course_update_notification.delay(course.id)
+        #
+        # # Логирование
+        # print(f"Рассылка запущена для курса ID: {course.id}")
 
 
 # Generics для уроков

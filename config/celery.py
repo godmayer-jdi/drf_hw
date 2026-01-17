@@ -1,6 +1,11 @@
 import os
-
+import platform
 from celery import Celery
+
+#  Проверка платформы и, если Windows: отключаем GSSAPI
+if platform.system() == "Windows":
+    os.environ['KRB5_CONFIG'] = ''
+    os.environ['NO_GSSAPI'] = '1'
 
 # Set the default Django settings module for the 'celery' program.
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
