@@ -16,6 +16,7 @@ from .paginators import \
     LMSPagination  # Отменены после применения общего пагинатора - CoursePagination, LessonPagination
 from .serializers import CourseSerializer, LessonSerializer
 from .services import create_payment_session
+from .tasks import send_course_update_notification
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
@@ -40,6 +41,18 @@ class CourseViewSet(viewsets.ModelViewSet):
         elif self.action == "create":
             return [IsAuthenticated & ~IsModer]
         return [IsAuthenticated()]
+
+    def perform_update(self, serializer):
+        """
+        Обновление курса + асинхронная рассылка подписчикам
+        """
+        course = serializer.save()
+
+        # Задание асинхронной рассылки при обновлении курса
+        send_course_update_notification.delay(course.id)
+
+        # Логирование
+        print(f"Рассылка запущена для курса ID: {course.id}")
 
 
 # Generics для уроков
