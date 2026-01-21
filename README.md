@@ -90,6 +90,11 @@ docker-compose.yaml (5 сервисов):
 ##  Настройки (.env)
 
 ```env
+# Django
+SECRET_KEY=django-insecure-superkey-change-in-production
+DEBUG=True
+ALLOWED_HOSTS=*
+
 # База данных
 DB_NAME=lms_db
 DB_USER=postgres
@@ -104,6 +109,15 @@ CELERY_RESULT_BACKEND=redis://redis:6379/0
 # Stripe (тестовые ключи)
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_PUBLISHABLE_KEY=pk_test_...
+
+# Email
+EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USE_TLS=True
+EMAIL_HOST_USER=your-email@gmail.com
+EMAIL_HOST_PASSWORD=your-app-password
+DEFAULT_FROM_EMAIL=test@example.com
 ```
 
 
