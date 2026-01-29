@@ -1,4 +1,4 @@
-version: '3.8'
+#version: '3.8'
 
 services:
   db:
@@ -29,35 +29,61 @@ services:
       timeout: 3s
       retries: 5
 
-  backend:
+#  backend:
+#    build: .
+#    container_name: lms_backend
+#    command: >
+#      sh -c "
+#        python manage.py migrate --noinput &&
+#        python manage.py collectstatic --noinput &&
+#        python manage.py runserver 0.0.0.0:8000
+#      "
+#    ports:
+#      - "8000:8000"
+#    volumes:
+#      - .:/app
+#      - static_data:/app/staticfiles
+#      - media_data:/app/media
+#    environment:
+#      - DB_NAME=${DB_NAME}
+#      - DB_USER=${DB_USER}
+#      - DB_PASSWORD=${DB_PASSWORD}
+#      - DB_HOST=db
+#      - DB_PORT=5432
+#      - CELERY_BROKER_URL=redis://redis:6379/0
+#      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+#    depends_on:
+#      db:
+#        condition: service_healthy
+#      redis:
+#        condition: service_healthy
+#    env_file: .env
+
+  web:
     build: .
-    container_name: lms_backend
-    command: >
-      sh -c "
-        python manage.py migrate --noinput &&
-        python manage.py collectstatic --noinput &&
-        python manage.py runserver 0.0.0.0:8000
-      "
-    ports:
-      - "8000:8000"
+    command: sh -c "python manage.py collectstatic --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:8000"
     volumes:
       - .:/app
-      - static_data:/app/static
+      - static_volume:/app/staticfiles
       - media_data:/app/media
-    environment:
-      - DB_NAME=${DB_NAME}
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - DB_HOST=db
-      - DB_PORT=5432
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    expose:
+      - "8000"
     depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    env_file: .env
+      - db
+      - redis
+    env_file:
+      - .env
+
+  nginx:
+    build:
+      context: ./nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - static_volume:/app/staticfiles
+    depends_on:
+      - web
 
   celery:
     build: .
@@ -66,7 +92,7 @@ services:
     volumes:
       - .:/app
     depends_on:
-      - backend
+      - web  # backend -предыдущее название
       - redis
     env_file: .env
 
@@ -77,7 +103,7 @@ services:
     volumes:
       - .:/app
     depends_on:
-      - backend
+      - web  # backend -предыдущее название
       - redis
       - db
     env_file: .env
