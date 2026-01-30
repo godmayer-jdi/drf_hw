@@ -2,6 +2,7 @@ import os
 import platform
 
 from celery import Celery
+
 #  from .celeryconfig import beat_schedule # Для прямого подключения расписания проверки "beat_schedule" из celeryconfig.py
 
 #  Проверка платформы и, если Windows: отключаем GSSAPI
@@ -18,7 +19,9 @@ app = Celery("config")
 # the configuration object to child processes.
 # - namespace='CELERY' means all celery-related configuration keys
 #   should have a `CELERY_` prefix.
-app.config_from_object("config.celeryconfig")  # Загружаем расписание из config/celeryconfig.py. Отключить/закомментировать при применении прямого подключения.
+app.config_from_object(
+    "config.celeryconfig"
+)  # Загружаем расписание из config/celeryconfig.py. Отключить/закомментировать при применении прямого подключения.
 #  app.conf.beat_schedule = beat_schedule  # Для прямого подключения расписания проверки "beat_schedule" из celeryconfig.py
 app.config_from_object("django.conf:settings", namespace="CELERY")
 

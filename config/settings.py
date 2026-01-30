@@ -140,10 +140,12 @@ STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "sk_test_51...")  # Тест�
 STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY", "pk_test_51...")
 
 # URL-адрес брокера сообщений
-CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://redis:6379/0')  # Redis, по умолчанию работает на порту 6379
+CELERY_BROKER_URL = os.getenv(
+    "CELERY_BROKER_URL", "redis://redis:6379/0"
+)  # Redis, по умолчанию работает на порту 6379
 
 # URL-адрес брокера результатов, также Redis
-CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://redis:6379/0')
+CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://redis:6379/0")
 
 # Часовой пояс для работы Celery
 CELERY_TIMEZONE = "Europe/Moscow"
@@ -156,9 +158,9 @@ CELERY_TASK_TIME_LIMIT = 30 * 60
 
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 CELERY_BEAT_SCHEDULE = {
-    'block-inactive-users-daily': {
-        'task': 'users.tasks.block_inactive_users',
-        'schedule': 86400,  # Без использования crontab 24 часа = 86400 секунд (чтоб избежать проблемы с Windows)
+    "block-inactive-users-daily": {
+        "task": "users.tasks.block_inactive_users",
+        "schedule": 86400,  # Без использования crontab 24 часа = 86400 секунд (чтоб избежать проблемы с Windows)
     },
 }
 
