@@ -93,5 +93,5 @@ vine==5.1.0
 wcwidth==0.2.14
 wrapt==2.0.1
 # zope.interface==8.2
-gunicorn
+gunicorn==23.0.0
 django-redis
