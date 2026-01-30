@@ -5,6 +5,7 @@ REST API для системы управления обучением с опл
 ##  Быстрый запуск (Docker Compose)
 
 ### Предварительные требования
+
 ```bash
 Docker >= 20.10
 Docker Compose >= 2.0
@@ -14,7 +15,7 @@ Docker Compose >= 2.0
 ### 1. Клонировать проект
 
 ```bash
-git clone
+git clone https://github.com/godmayer-jdi/drf_hw.git
 cd DRF_hw
 ```
 
@@ -42,82 +43,159 @@ docker compose exec backend python manage.py createsuperuser
 ```
 
 
+## ️ **ПРОДАКШН ДЕПЛОЙ (YandexCloud)**
+
+### **Критерий 4.4: Инструкции по настройке сервера**
+
+#### **1. Подключение к серверу**
+
+```bash
+ssh -i ssh-key_YC godmayer385@158.160.20.204
+# passphrase: testadmin
+```
+
+
+#### **2. Настройка сервера (выполнить один раз)**
+
+```bash
+# Обновление и установка
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y docker.io docker-compose nginx ufw git curl
+
+# Docker права
+sudo systemctl enable docker
+sudo systemctl start docker
+sudo usermod -aG docker $USER
+newgrp docker
+
+# Firewall (критерий 1.5 безопасность)
+sudo ufw allow 22/tcp    # SSH
+sudo ufw allow 80/tcp    # HTTP
+sudo ufw allow 443/tcp   # HTTPS
+sudo ufw --force enable
+sudo ufw status
+
+# Директория проекта (критерий 1.1)
+sudo mkdir -p /var/www/drf_hw
+sudo chown $USER:$USER /var/www/drf_hw -R
+cd /var/www/drf_hw
+```
+
+
+#### **3. Ручной деплой**
+
+```bash
+# Клонировать (первый раз)
+git clone https://github.com/godmayer-jdi/drf_hw.git .
+git checkout hw-docker
+
+# Настроить .env
+cp .env.example .env
+# Отредактировать: SECRET_KEY, DB_PASSWORD
+
+# Запуск (критерий 1.4 доступно по IP)
+docker compose up -d --build
+
+# Проверка (критерий 1.6 auto-restart)
+docker compose ps
+docker compose logs -f
+```
+
+**Приложение доступно:** **http://158.160.20.204**
+
+##  **CI/CD GitHub Actions (Задание 2)**
+
+### **Критерий 4.5: Шаги запуска workflow**
+
+#### **1. Настройка GitHub Secrets**
+
+**GitHub → Settings → Secrets and variables → Actions:**
+
+```
+SERVER_IP=158.160.20.204
+SERVER_USER=godmayer385
+SSH_PRIVATE_KEY=-----BEGIN... (ssh-key_YC)
+SSH_PASSPHRASE=testadmin
+PROD_SECRET_KEY=django-super-secret-production-key
+PROD_DB_PASSWORD=secure_db_password_123
+```
+
+
+#### **2. Автоматический запуск**
+
+```
+1. git push origin hw-docker  → Workflow запускается автоматически (критерий 2.2)
+2. Тесты pytest               → (критерий 2.3, 2.4, 2.5)
+3. Деплой на сервер           → Только после успешных тестов (критерий 2.6, 2.7)
+```
+
+
+#### **3. Проверка workflow**
+
+```
+GitHub → Actions → CI/CD DRF_hw → Просмотр логов
+Зеленые галочки = успешный деплой
+```
+
+
+#### **4. Ручной триггер (если нужно)**
+
+```bash
+git commit --allow-empty -m "trigger deploy"
+git push origin hw-docker
+```
+
+
 ##  Проверка работоспособности сервисов
 
 | Сервис | Команда проверки | Ожидаемый результат | URL/API |
 | :-- | :-- | :-- | :-- |
-| **Backend (Django)** | `docker compose logs backend` | `Starting development server at http://0.0.0.0:8000/` | http://localhost:8000/swagger/ |
-| **PostgreSQL** | `docker compose logs db` | `database system is ready to accept connections` | localhost:5433 |
-| **Redis** | `docker compose exec redis redis-cli ping` | `PONG` | localhost:6379 |
+| **Nginx** | `curl http://158.160.20.204` | `200 OK` | **http://158.160.20.204** |
+| **Backend (Django)** | `docker compose logs web` | `gunicorn... started` | http://158.160.20.204/swagger/ |
+| **PostgreSQL** | `docker compose logs db` | `database system is ready` | **localhost:5433** (dev) |
+| **Redis** | `docker compose exec redis redis-cli ping` | `PONG` | **localhost:6379** (dev) |
 | **Celery Worker** | `docker compose logs celery` | `celery@... ready` | Логи задач |
-| **Celery Beat** | `docker compose logs celery-beat` | `beat: Starting...` | `/admin/django_celery_beat/` |
-
+| **Celery Beat** | `docker compose logs celery-beat` | `beat: Starting...` | /admin/django_celery_beat/ |
 
 ### Суперпользователь
 
 ```bash
-docker compose exec backend python manage.py createsuperuser
-# Username: admin
-# Email: test@test.com
-# Password: admin
+docker compose exec web python manage.py createsuperuser
+# Username: admin | Password: admin
 ```
 
 
-### База данных
+## ️ Структура сервисов (Production)
 
-```bash
-# Подключение к PostgreSQL
-docker compose exec db psql -U postgres -d lms_db
-
-# Сброс БД (осторожно!)
-docker compose down -v
-docker compose up --build -d
+```
+6x Docker контейнеров:
+├── nginx          → 158.160.20.204:80  (критерий 1.3)
+├── web (Gunicorn) → web:8000           (proxy через nginx)
+├── db (PostgreSQL:16)
+├── redis (Redis:7)
+├── celery (Worker)
+└── celery-beat (Beat)
 ```
 
 
-##  Структура сервисов
-
-```
-docker-compose.yaml (5 сервисов):
-├── db (PostgreSQL:16)    → localhost:5433
-├── redis (Redis:7)       → localhost:6379  
-├── backend (Django:5.2)  → localhost:8000
-├── celery (Worker)       → Фоновые задачи
-└── celery-beat (Beat)    → Периодические задачи
-```
-
-
-##  Настройки (.env)
+##  Настройки (.env) для продакшена
 
 ```env
-# Django
-SECRET_KEY=django-insecure-superkey-change-in-production
-DEBUG=True
-ALLOWED_HOSTS=*
+# Django (критерий 3.1 секреты)
+SECRET_KEY=${PROD_SECRET_KEY}           # Из GitHub Secrets
+DEBUG=0                                 # Продакшн!
+ALLOWED_HOSTS=158.160.20.204,localhost
 
 # База данных
 DB_NAME=lms_db
 DB_USER=postgres
-DB_PASSWORD=postgres123
+DB_PASSWORD=${PROD_DB_PASSWORD}         # Из GitHub Secrets
 DB_HOST=db
 DB_PORT=5432
 
 # Redis/Celery
 CELERY_BROKER_URL=redis://redis:6379/0
 CELERY_RESULT_BACKEND=redis://redis:6379/0
-
-# Stripe (тестовые ключи)
-STRIPE_SECRET_KEY=sk_test_...
-STRIPE_PUBLISHABLE_KEY=pk_test_...
-
-# Email
-EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
-EMAIL_HOST=smtp.gmail.com
-EMAIL_PORT=587
-EMAIL_USE_TLS=True
-EMAIL_HOST_USER=your-email@gmail.com
-EMAIL_HOST_PASSWORD=your-app-password
-DEFAULT_FROM_EMAIL=test@example.com
 ```
 
 
@@ -125,57 +203,45 @@ DEFAULT_FROM_EMAIL=test@example.com
 
 | Эндпоинт | Метод | Описание |
 | :-- | :-- | :-- |
-| `/swagger/` | GET | Swagger UI документация |
-| `/admin/` | GET | Django Admin |
-| `/api/token/` | POST | Получить JWT токен |
+| `/swagger/` | GET | **Swagger UI** документация |
+| `/admin/` | GET | **Django Admin** |
+| `/api/token/` | POST | JWT токен авторизации |
 | `/api/courses/` | GET/POST | Список/создание курсов |
 | `/api/courses/1/pay/` | POST | Оплата курса (Stripe) |
 
-##  Остановка проекта
+##  Остановка и обновление
+
+### Сервер
 
 ```bash
-# Остановить контейнеры (сохранить БД)
+cd /var/www/drf_hw
 docker compose down
-
-# Полная очистка (БД + volumes)
-docker compose down -v
-
-# Удалить образы
-docker compose down --rmi all -v
+git pull origin develop
+docker compose up -d --build
 ```
 
 
-##  Локальная разработка (альтернатива)
+### CI/CD (автоматически)
 
 ```bash
-# 1. Запустить БД и Redis
-docker compose up db redis -d
-
-# 2. Локальный Django (.venv)
-python manage.py runserver 8000
+git push origin develop  # Тесты + деплой
 ```
 
 
-##  Частые проблемы и решения
-
-| Проблема | Решение |
-| :-- | :-- |
-| `backend` не запускается | `docker compose logs backend` |
-| `Connection refused` к БД | Проверить `DB_HOST=db` в `.env` |
-| Swagger 404 | `http://localhost:8000/swagger/` |
-| Celery не работает | `docker compose logs celery` |
-| Миграции не прошли | `docker compose exec backend python manage.py migrate` |
-
-##  Мониторинг
+##  Мониторинг продакшена
 
 ```bash
-# Статус всех сервисов
+# Статус
 docker compose ps
+
+# Логи (все сервисы)
+docker compose logs -f
 
 # Ресурсы
 docker stats
 
-# Сеть
-docker network ls
-docker network inspect <project>_default
+# Перезапуск
+docker compose restart
 ```
+
+**Live: http://158.160.20.204** | ** Auto-deploy: `git push origin hw-docker`**
