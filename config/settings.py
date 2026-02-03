@@ -186,3 +186,7 @@ if any(x in sys.argv[0] for x in ['pytest', 'manage.py', 'test']):
     EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'
     CELERY_TASK_ALWAYS_EAGER = True
     CELERY_TASK_EAGER_PROPAGATES = True
+
+    # CI/CD тесты — Memory storage
+    if 'pytest' in sys.modules or 'test' in os.environ.get('CI', ''):
+        DEFAULT_FILE_STORAGE = 'django.core.files.storage.InMemoryStorage'
