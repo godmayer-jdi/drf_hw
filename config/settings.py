@@ -188,5 +188,6 @@ if any(x in sys.argv[0] for x in ['pytest', 'manage.py', 'test']):
     CELERY_TASK_EAGER_PROPAGATES = True
 
     # CI/CD тесты — Memory storage
-    if 'pytest' in sys.modules or 'test' in os.environ.get('CI', ''):
+    if os.environ.get('CI') or 'pytest' in sys.modules:
         DEFAULT_FILE_STORAGE = 'django.core.files.storage.InMemoryStorage'
+        MEDIA_ROOT = '/tmp/media'
