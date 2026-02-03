@@ -25,8 +25,8 @@ INSTALLED_APPS = [
     "django_filters",
     "users",
     "lms",
-    "django_celery_beat",
-    "django_celery_results",
+#    "django_celery_beat",
+#    "django_celery_results",
 ]
 
 MIDDLEWARE = [
@@ -173,3 +173,16 @@ EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", True)
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "test@example.com")
+
+import sys
+if any(x in sys.argv[0] for x in ['pytest', 'manage.py', 'test']):
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': ':memory:',
+        }
+    }
+    DEBUG = True
+    EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'
+    CELERY_TASK_ALWAYS_EAGER = True
+    CELERY_TASK_EAGER_PROPAGATES = True

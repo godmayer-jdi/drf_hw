@@ -59,7 +59,7 @@ jobs:
         DB_PORT: 5432
         CELERY_BROKER_URL: redis://localhost:6379/0
         CELERY_RESULT_BACKEND: redis://localhost:6379/0
-      run: pytest --cov=./ --cov-report=xml
+      run: python -m pytest lms/tests.py --cov=./  --cov-report=html --cov-report=xml -v
 
     - name: Upload coverage
       uses: codecov/codecov-action@v4

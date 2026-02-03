@@ -1,14 +1,14 @@
 from rest_framework import serializers
 
 from .models import Course, Lesson
-from .validators import validate_youtube_link
+from .validators import validate_rutube_link
 
 
 class LessonSerializer(serializers.ModelSerializer):
+    video_link = serializers.URLField(validators=[validate_rutube_link])
     class Meta:
         model = Lesson
         fields = "__all__"
-        validators = [validate_youtube_link]
 
 
 class CourseSerializer(serializers.ModelSerializer):

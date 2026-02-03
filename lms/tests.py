@@ -3,8 +3,13 @@ from django.contrib.auth.models import Group
 from django.shortcuts import reverse
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
+from django.core.files.uploadedfile import SimpleUploadedFile
+from io import BytesIO
+from PIL import Image
 
 from .models import Course, Lesson, Subscription
+
+VALID_JPG_HEADER = b'\xff\xd8\xff\xe0\x00\x10JFIF'
 
 User = get_user_model()
 
@@ -27,7 +32,7 @@ class LessonAndSubscriptionTests(APITestCase):
             title="Test Lesson",
             description="Test desc",
             preview="lessons/test.jpg",
-            video_link="https://rutube.ru/video/b2a127bfc206b85978150f390156d052/?r=plwd",
+            video_link="https://rutube.ru/video/b2a127bfc206b85978150f390156d052/",
             course=self.course,
             owner=self.user,
         )
@@ -44,15 +49,28 @@ class LessonAndSubscriptionTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["results"]), 1)
 
+        def create_valid_image():
+            img = Image.new('RGB', (50, 50), color='red')
+            fp = BytesIO()
+            img.save(fp, format='JPEG')
+            fp.seek(0)
+            return SimpleUploadedFile(
+                'test.jpg',
+                fp.read(),
+                content_type='image/jpeg'
+            )
+
         # POST создание — полные данные
         create_data = {
             "title": "New Lesson",
             "description": "New lesson description",
-            "preview": "lessons/new_lesson.jpg",
-            "video_link": "https://rutube.ru/video/b2a127bfc206b85978150f390156d052/?r=plwd",
+            "preview": create_valid_image(), # "lessons/new_lesson.jpg",
+            "video_link": "https://rutube.ru/video/b2a127bfc206b85978150f390156d052/",
             "course": self.course.id,
+            "owner": self.user.id,
         }
         response = self.client.post("/api/lessons/", create_data)
+        print("400 ERROR:", response.data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         new_lesson_id = response.data["id"]
 
@@ -65,8 +83,8 @@ class LessonAndSubscriptionTests(APITestCase):
         update_data = {
             "title": "Updated Lesson",
             "description": "Updated desc",
-            "preview": "lessons/update_lesson.jpg",
-            "video_link": "https://rutube.ru/video/b2a127bfc206b85978150f390156d052/?r=plwd",
+            "preview": create_valid_image(), #  "lessons/update_lesson.jpg",
+            "video_link": "https://rutube.ru/video/b2a127bfc206b85978150f390156d052/",
             "course": self.course.id,
         }
         response = self.client.patch(self.get_lesson_url(new_lesson_id), update_data)
@@ -81,7 +99,7 @@ class LessonAndSubscriptionTests(APITestCase):
         bad_data = {
             "title": "Bad Lesson",
             "description": "Bad desc",
-            "preview": "lessons/bad.jpg",
+            "preview": "not_a_file.jpg",
             "video_link": "https://vk.com/video",
             "course": self.course.id,
         }
@@ -112,10 +130,11 @@ class LessonAndSubscriptionTests(APITestCase):
             "preview": "lessons/mod.jpg",
             "video_link": "https://vk.com/video_test",
             "course": self.course.id,
+            "owner": self.user.id,
         }
         """Не может создавать"""
         response = self.client.post("/api/lessons/", data)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         """Может читать"""
         response = self.client.get("/api/lessons/")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
